@@ -51,8 +51,8 @@ app.get("/api/jobs", async (req, res) => {
     try {
         //hämta alla jobb
         let result = await job.find({}); //ett tomt objeckt säger att vi vill hämta allt 
-        res.status(200).json(jobs);
-        return res.json(result);    
+        res.status(200).json(result);
+   
     } catch(error) {
         return res.status(500).json({error: error.message}); //är 500 för det är på serversidan
     }
@@ -69,21 +69,38 @@ app.post("/api/jobs", async (req, res) => {
 });
 
 //uppdatera jobb
-app.put("/api/jobs:id", async (req, res) => {
+app.put("/api/jobs/:id", async (req, res) => {
     try {
         const { id } = req.params;
 
-        const job = await job.findByIdAndUpdate(id, req.body);
+        const updatedJob = await job.findByIdAndUpdate(id, req.body, { new: true }); //new returnerar det uppdaterade direkt
 
-        if(!product) {
+        if(!updatedJob) {
             return res.status(404).json({ message: "Jobbet hittades inte" });
         }
 
-        const updatedJob = await job.findById(id) {}
         res.status(200).json(updatedJob);
+
+    } catch(error) {
+        res.status(500).json({ message: "Något blev fel: " + error.message });
     }
+});
 
+app.delete("/api/jobs/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        const deletedJob = await job.findByIdAndDelete(id);
+
+        if(!deletedJob) {
+            return res.status(404).json({ message: "Jobbet hittades inte" });
+        }
+
+        res.status(200).json({ message: "Jobbet har tagits bort" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Något blev fel: " + error.message });
+    }
 });
 
 app.listen(port, () => {
