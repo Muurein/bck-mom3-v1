@@ -1,3 +1,5 @@
+//skapad med hjälp av videon https://www.youtube.com/watch?v=_7UQPve99r4 (freeCodeCamp.org på YouTube)
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -7,8 +9,12 @@ const app = express();
 const port = process.env.PORT || 9000;
 
 //cors och JSON
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:1234",
+    methods: "GET,POST,PUT,DELETE",
+}));
 app.use(express.json());
+
 
 //koppla till mongoDB
 mongoose.connect("mongodb://localhost:27017/bck-mom3").then(() => {
@@ -19,18 +25,18 @@ mongoose.connect("mongodb://localhost:27017/bck-mom3").then(() => {
 
 //schema - ett schema för varje önskad tabell
 const jobSchema = new mongoose.Schema({
-    //ange attribut
-    companyName: {
-        type: String,
-        required: [true, "Du behöver fylla i företagsnamnet"],
-    },
+    //anger attribut (samt ger ett felmeddelande om ett attribut inte finns med)
     jobTitle: {
         type: String, 
-        required: [true, "Du behöver fylla i jobbtiteln"],
+        required: [true, "Du behöver fylla i en jobbtitel"],
+    },
+    companyName: {
+        type: String,
+        required: [true, "Du behöver fylla i ett företagsnamn"],
     },
     endDate: {
         type: String,
-        required: [true, "Du behöver fylla i slutdatumet"],
+        required: [true, "Du behöver fylla i ett slutdatum"],
     },
     description: {
         type: String,
@@ -38,43 +44,59 @@ const jobSchema = new mongoose.Schema({
     }
 });
 
-//en model är typ som en tabell? behöver skriva vilket schema den ska använda
+
 const job = mongoose.model("Job", jobSchema);
+
 
 //router
 app.get("/api", async (req, res) => {
-    res.json({message: "Välkommen"});
+
+    if(error) {
+        res.status(500).json({error: "Något gick fel: " + error} );
+        return;
+    }
+
+    res.status(200).json( {message: "Välkommen, api funkar"} );
 });
 
-//ska vara en async pga vi ska göra anrop därifrån
+
+//hämta jobb
 app.get("/api/jobs", async (req, res) => {
     try {
         //hämta alla jobb
-        let result = await job.find({}); //ett tomt objeckt säger att vi vill hämta allt 
+        let result = await job.find({}); 
+
         res.status(200).json(result);
    
     } catch(error) {
-        return res.status(500).json({error: error.message}); //är 500 för det är på serversidan
+        return res.status(500).json({error: error.message}); 
     }
 });
 
+
+//skapa jobb
 app.post("/api/jobs", async (req, res) => {
     try {
         let result = await job.create(req.body);
 
         return res.json(result);
+
     } catch(error) {
-        return res.status(400).json({error: error.message}); //är 400 för det är på klientsidan
+        return res.status(400).json({error: error.message}); 
     }
 });
+
 
 //uppdatera jobb
 app.put("/api/jobs/:id", async (req, res) => {
     try {
+        //hämtar id
         const { id } = req.params;
 
-        const updatedJob = await job.findByIdAndUpdate(id, req.body, { new: true }); //new returnerar det uppdaterade direkt
+        //hämtar rätt jobb baserat på id
+        const updatedJob = await job.findByIdAndUpdate(id, req.body, { new: true }); 
 
+        //validering
         if(!updatedJob) {
             return res.status(404).json({ message: "Jobbet hittades inte" });
         }
@@ -86,12 +108,17 @@ app.put("/api/jobs/:id", async (req, res) => {
     }
 });
 
+
+//ta bort jobb
 app.delete("/api/jobs/:id", async (req, res) => {
     try {
+        //hämtar id
         const { id } = req.params;
 
+        //hämtar rätt jobb baserat på id
         const deletedJob = await job.findByIdAndDelete(id);
 
+        //validering
         if(!deletedJob) {
             return res.status(404).json({ message: "Jobbet hittades inte" });
         }
@@ -103,6 +130,7 @@ app.delete("/api/jobs/:id", async (req, res) => {
     }
 });
 
+//starta servern
 app.listen(port, () => {
     console.log("Servern är igång på port: ", port);
 });
